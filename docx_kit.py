@@ -90,14 +90,21 @@ def add_table(doc, n: int, title: str, unit: str, columns: list, rows: list, not
     cap.paragraph_format.keep_with_next = True
     t = doc.add_table(rows=1, cols=len(columns))
     t.alignment = WD_TABLE_ALIGNMENT.CENTER
+    t.autofit = False
+    sec = doc.sections[-1]
+    full = (sec.page_width - sec.left_margin - sec.right_margin) / 36000  # mm
+    first = min(44, full * 0.4) if len(columns) > 3 else full / len(columns)
+    widths = [Mm(first)] + [Mm((full - first) / max(1, len(columns) - 1))] * (len(columns) - 1)
     for j, c in enumerate(columns):
         cell = t.rows[0].cells[j]
         cell.text = ""
-        _font(cell.paragraphs[0].add_run(str(c)), 9, True, "FFFFFF")
+        _font(cell.paragraphs[0].add_run(str(c)), 8 if len(columns) > 6 else 9, True, "FFFFFF")
         cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
         _shade(cell, NAVY)
     for i, row in enumerate(rows):
         cells = t.add_row().cells
+        for j, w in enumerate(widths):
+            cells[j].width = w
         total = isinstance(row[0], str) and bool(TOTAL_RE.match(row[0]))
         kind = (kinds[i] if kinds else "num")
         for j, v in enumerate(row):
@@ -111,6 +118,9 @@ def add_table(doc, n: int, title: str, unit: str, columns: list, rows: list, not
                 _shade(cells[j], TOTAL)
             elif i % 2:
                 _shade(cells[j], ALT)
+    for j, w in enumerate(widths):
+        t.rows[0].cells[j].width = w
+        t.columns[j].width = w  # LibreOffice는 gridCol 너비를 따른다
     _note_lines(doc, note, source)
     return t
 
