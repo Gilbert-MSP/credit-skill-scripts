@@ -86,6 +86,37 @@ def test_struct_unit_million():
     assert engine.parse_struct_debt(t)["2026.09"] == 2830
 
 
+PF = os.path.join(FX, "pf_sample.txt")
+
+
+def test_parse_pf():
+    assert engine.parse_pf(open(PF, encoding="utf-8").read()) == {
+        "period": "2026.09", "M13": 26432, "M17": 24877, "M18": 1556, "M14": 78318, "M15": 9645, "M16": 305}
+
+
+def test_pf_fills_excel():
+    d = tempfile.mkdtemp()
+    m = engine.run(STD, d, pf_path=PF)
+    r = m["bases"]["연결"]["rows"]
+    assert r["지급보증·신용보강 제공액(연결 밖)"][-1] == 26432 + 78318 + 9645 + 305
+    assert r["PF 신용보강(연대보증·채무인수·자금보충)"][-1] == 26432
+    assert r["그중 브릿지론(본PF 전·미착공 단계)"][-1] == 24877
+    assert r["그중 본PF"][-1] == 1556
+    assert r["책임준공 조건부 채무인수"][-1] == 78318
+    assert r["PF 신용보강(연대보증·채무인수·자금보충)"][-2] in (0, None)  # 다른 기간은 건드리지 않는다
+    assert m["bases"]["별도"]["rows"]["PF 신용보강(연대보증·채무인수·자금보충)"][-1] in (0, None)
+
+
+def test_pf_period_mismatch():
+    t = open(PF, encoding="utf-8").read().replace("분기보고서 (2026.09)", "반기보고서 (2026.06)")
+    p = os.path.join(tempfile.mkdtemp(), "pf.txt"); open(p, "w", encoding="utf-8").write(t)
+    d = tempfile.mkdtemp()
+    m = engine.run(STD, d, pf_path=p)
+    assert m["bases"]["연결"]["rows"]["PF 신용보강(연대보증·채무인수·자금보충)"][-1] in (0, None)
+    q = json.load(open(os.path.join(d, "qa.json"), encoding="utf-8"))
+    assert any("PF" in x for x in q["pf_notes"])
+
+
 if __name__ == "__main__":
     for k, f in list(globals().items()):
         if k.startswith("test_"):

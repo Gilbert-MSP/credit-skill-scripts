@@ -14,7 +14,7 @@ curl -sL https://github.com/Gilbert-MSP/credit-skill-scripts/archive/refs/heads/
 |---|---|
 | `template/표준재무부표_템플릿_v2.9.xlsx` | 표준재무부표 양식. 지표 산식의 유일한 기준 |
 | `stdfs_fill.py` | `dart_std_data` 결과를 양식에 채운다 |
-| `engine.py` | 양식 채우기 → LibreOffice 재계산 → `metrics.json`·`qa.json` |
+| `engine.py` | 양식 채우기(건설사는 `--pf`로 PF 신용보강까지) → LibreOffice 재계산 → `metrics.json`·`qa.json` |
 | `docx_kit.py` · `charts.py` | Word 서식·출처 줄·필수 차트 |
 | `light_report.py` | 약식 점검 Word 2~3쪽 |
 | `fst.py` | 재무구조분석표 엑셀·워드 |
