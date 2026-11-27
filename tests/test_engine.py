@@ -46,6 +46,20 @@ def test_contract_derivative_rows():
         assert "계약부채(선수금 포함)" in r and "순수 운전자금(매출채권+재고−매입채무)" in r and "계약자산/매출액" in r
 
 
+def test_rating_fin_cost():
+    """평가사 기준 금융비용 = 지금 금융비용 + 매출채권처분손실(R20) + 보증비용(R21) + 자본화 차입원가(R22)"""
+    base, _ = _run()
+    txt = open(STD, encoding="utf-8").read().replace("## 연결\n", "## 연결\nR20:1,1,1,1,1,1,1\nR22:10,10,10,10,10,10,10\n", 1)
+    p = os.path.join(tempfile.mkdtemp(), "std.txt")
+    open(p, "w", encoding="utf-8").write(txt)
+    m, _ = _run(p)
+    k = "참고: 금융비용(평가사 기준: 이자비용+매출채권처분손실+보증비용+자본화 이자)"
+    r0, r1 = base["bases"]["연결"]["rows"], m["bases"]["연결"]["rows"]
+    assert r1[k][-1] == r0[k][-1] + 11, (r0[k], r1[k])
+    assert r1["EBITDA/금융비용(배)"] == r0["EBITDA/금융비용(배)"]          # 기존 지표는 그대로
+    assert r1["참고: EBITDA/금융비용(평가사 기준, 배)"][-1] < r0["참고: EBITDA/금융비용(평가사 기준, 배)"][-1]
+
+
 def test_matches_recalculated_xlsx():
     m, d = _run()
     x = [f for f in os.listdir(d) if f.endswith(".xlsx")][0]
