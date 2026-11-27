@@ -31,12 +31,27 @@ def test_metrics_shape():
     assert json.load(open(os.path.join(d, "metrics.json"), encoding="utf-8")) == m
 
 
+def test_contract_derivative_rows():
+    """계약자산·계약부채·파생상품 줄: 나눠 본 값의 합이 합친 줄과 같고, 파생상품부채 포함 총차입금 = 총차입금 + 파생상품부채(설정 B5 = 0)"""
+    m, _ = _run()
+    for b in m["bases"].values():
+        r = b["rows"]
+        for j in range(len(b["periods"])):
+            ar, ca, tot = r["그중 매출채권"][j], r["그중 계약자산"][j], r["매출채권·계약자산"][j]
+            if tot is not None:
+                assert abs((ar or 0) + (ca or 0) - tot) < 0.01, (j, ar, ca, tot)
+            d, q, ref = r["총차입금"][j], r["파생상품부채"][j], r["참고: 파생상품부채 포함 총차입금(전환권 등 상환 의무가 있을 때만 의미)"][j]
+            if d is not None:
+                assert abs(d + (q or 0) - ref) < 0.01, (j, d, q, ref)
+        assert "계약부채(선수금 포함)" in r and "순수 운전자금(매출채권+재고−매입채무)" in r and "계약자산/매출액" in r
+
+
 def test_matches_recalculated_xlsx():
     m, d = _run()
     x = [f for f in os.listdir(d) if f.endswith(".xlsx")][0]
     ws = openpyxl.load_workbook(os.path.join(d, x), data_only=True)["주요 재무지표(연결)"]
-    assert ws.cell(30, 1).value == "총차입금"
-    assert m["bases"]["연결"]["rows"]["총차입금"][-1] == ws.cell(30, 8).value == 2835
+    r = next(i for i in range(1, ws.max_row + 1) if ws.cell(i, 1).value == "총차입금")   # 줄을 끼워 넣어도 이름으로 찾는다
+    assert m["bases"]["연결"]["rows"]["총차입금"][-1] == ws.cell(r, 8).value == 2835
 
 
 def test_blank_formula_is_none():
