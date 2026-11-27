@@ -47,13 +47,13 @@ def test_contract_derivative_rows():
 
 
 def test_rating_fin_cost():
-    """평가사 기준 금융비용 = 지금 금융비용 + 매출채권처분손실(R20) + 보증비용(R21) + 자본화 차입원가(R22)"""
+    """평가사 기준 금융비용 = 이자비용 + 매출채권처분손실(R20) + 자본화 차입원가(R22, 설정 B12). 보증비용(R21)은 넣지 않는다"""
     base, _ = _run()
-    txt = open(STD, encoding="utf-8").read().replace("## 연결\n", "## 연결\nR20:1,1,1,1,1,1,1\nR22:10,10,10,10,10,10,10\n", 1)
+    txt = open(STD, encoding="utf-8").read().replace("## 연결\n", "## 연결\nR20:1,1,1,1,1,1,1\nR21:5,5,5,5,5,5,5\nR22:10,10,10,10,10,10,10\n", 1)
     p = os.path.join(tempfile.mkdtemp(), "std.txt")
     open(p, "w", encoding="utf-8").write(txt)
     m, _ = _run(p)
-    k = "참고: 금융비용(평가사 기준: 이자비용+매출채권처분손실+보증비용+자본화 이자)"
+    k = "참고: 금융비용(평가사 기준: 이자비용+매출채권처분손실+자본화 이자(설정))"
     r0, r1 = base["bases"]["연결"]["rows"], m["bases"]["연결"]["rows"]
     assert r1[k][-1] == r0[k][-1] + 11, (r0[k], r1[k])
     assert r1["EBITDA/금융비용(배)"] == r0["EBITDA/금융비용(배)"]          # 기존 지표는 그대로
